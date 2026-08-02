@@ -603,7 +603,7 @@
 <body>
   <header class="app-header">
     <div class="container header-inner">
-      <span class="brand">GARISCO<span class="sub">SAUKA KA HUTA</span></span>
+      <span class="brand">Garisco<span class="sub">Sales Agent</span></span>
       <span class="header-right">
         <span class="sync-status" id="syncStatus">Ready</span>
         <span class="date" id="todayLabel"></span>
@@ -621,7 +621,7 @@
           <label>Opay
             <input type="number" id="opayAmount" step="0.01" min="0" placeholder="0.00" />
           </label>
-          <label>Moniepoint
+          <label>Money
             <input type="number" id="moneyAmount" step="0.01" min="0" placeholder="0.00" />
           </label>
           <label>Cash
@@ -665,7 +665,7 @@
           <span class="stat-value" id="opayTotal">0.00</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Moniepoint</span>
+          <span class="stat-label">Money</span>
           <span class="stat-value" id="moneyTotal">0.00</span>
         </div>
         <div class="stat">
@@ -742,9 +742,9 @@
               <th>AMOUNT</th>
               <th>BANKED</th>
               <th>POS</th>
-              <th>EXPENSES</th>
+              <th>EXPENSES AMOUNT</th>
               <th>BALANCE</th>
-              <th>EXPENSES</th>
+              <th>DESCRIPTION</th>
               <th></th>
             </tr>
           </thead>
@@ -771,7 +771,7 @@
       expenseCounter: parseInt(localStorage.getItem('garisco_expenseCounter')) || 0,
       sheetUrl: localStorage.getItem('garisco_sheetUrl') || '',
       apiKey: 'garisco2026',
-      adminKeyword: 'garisco-admin', // change this to whatever keyword only the admin should know
+      adminKeyword: 'your-password-here', // ⚠️ CHANGE THIS! Set to YOUR admin password (the one you want to enter when configuring Google Sheets)
       syncing: false,
 
       init() {
@@ -938,6 +938,15 @@
         document.getElementById('gasDate').value = today;
         document.getElementById('filterDate').value = today;
         document.getElementById('todayLabel').textContent = new Date().toLocaleDateString();
+      },
+
+      // Converts a date input's value (YYYY-MM-DD) into a plain
+      // "DD/MM/YYYY" numbers-only string for display and for saving
+      // to the ledger / Google Sheet.
+      toDMY(isoDate) {
+        if (!isoDate) return '';
+        const [y, m, d] = isoDate.split('-');
+        return `${d}/${m}/${y}`;
       },
 
       attachListeners() {
@@ -1120,7 +1129,7 @@
       },
 
       saveGasSales() {
-        const date = document.getElementById('gasDate').value;
+        const date = this.toDMY(document.getElementById('gasDate').value);
         const sales = parseFloat(document.getElementById('gSales').value) || 0;
         const dipping = parseFloat(document.getElementById('gDipping').value) || 0;
         const price = parseFloat(document.getElementById('gPrice').value) || 0;
@@ -1182,9 +1191,9 @@
               <td>${g.amount.toFixed(2)}</td>
               <td>${g.banked.toFixed(2)}</td>
               <td>${g.pos.toFixed(2)}</td>
-              <td>${g.expensesDesc || ''}</td>
-              <td>${g.balance.toFixed(2)}</td>
               <td>${g.expensesAmt.toFixed(2)}</td>
+              <td>${g.balance.toFixed(2)}</td>
+              <td>${g.expensesDesc || ''}</td>
               <td><button class="row-del" onclick="app.deleteGasSale(${g.id})">Delete</button></td>
             </tr>
           `;
