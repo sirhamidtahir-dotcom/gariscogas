@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Garisco — Daily Sales Recorder</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src https://script.google.com https://script.googleusercontent.com; img-src 'self' data:;">
   <style>
     :root {
       --primary: #14532d;
@@ -140,6 +141,8 @@
       margin-bottom: 1rem;
       font-size: 1.3rem;
       text-align: center;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid #000000;
     }
 
     .panel h3 {
@@ -148,6 +151,12 @@
       margin-bottom: 1rem;
       font-size: 1.1rem;
       text-align: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #000000;
+    }
+
+    .panel h3:first-child {
+      margin-top: 0;
     }
 
     .sale-form {
@@ -229,9 +238,9 @@
     }
 
     .expenses-section {
-      margin-top: 1.5rem;
-      padding-top: 1.5rem;
-      border-top: 2px solid #e6ece8;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
     }
 
     .expenses-table {
@@ -685,10 +694,12 @@
           </label>
         </div>
       </div>
+    </section>
 
+    <section class="panel">
       <!-- Other Expenses Section -->
       <div class="expenses-section">
-        <h3>Other Expenses</h3>
+        <h2>Other Expenses</h2>
         <div class="table-scroll">
           <table class="expenses-table">
             <thead>
@@ -706,27 +717,6 @@
         <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-alt); border-radius: 6px;">
           <p style="font-size: 0.9rem; color: #5a6b62; margin-bottom: 0.5rem;">Total Other Expenses:</p>
           <p style="font-size: 1.3rem; font-weight: 700; color: var(--primary);" id="totalExpenses">0.00</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="summary-bar">
-        <div class="stat">
-          <span class="stat-label">Cash</span>
-          <span class="stat-value" id="cashTotal">0.00</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Zenith Bank</span>
-          <span class="stat-value" id="zenithTotal">0.00</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Opay</span>
-          <span class="stat-value" id="opayTotal">0.00</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Total</span>
-          <span class="stat-value" id="grandTotal">0.00</span>
         </div>
       </div>
     </section>
@@ -759,6 +749,25 @@
       <p style="font-size: 0.8rem; color: #5a6b62; margin-top: -0.5rem;">
         BANKED (Cash), POS (Zenith Bank + Opay), and EXPENSES are pulled automatically from the Payment Breakdown and Other Expenses sections above — no need to re-enter them here.
       </p>
+
+      <div class="summary-bar">
+        <div class="stat">
+          <span class="stat-label">Cash</span>
+          <span class="stat-value" id="cashTotal">0.00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Zenith Bank</span>
+          <span class="stat-value" id="zenithTotal">0.00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Opay</span>
+          <span class="stat-value" id="opayTotal">0.00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Total</span>
+          <span class="stat-value" id="grandTotal">0.00</span>
+        </div>
+      </div>
 
       <button type="button" class="btn" id="gasSave">Save Gas Sales Record</button>
 
@@ -1079,6 +1088,12 @@
         this.renderExpenses();
       },
 
+      escapeHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, ch => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+      },
+
       renderExpenses() {
         const tbody = document.getElementById('expensesBody');
         tbody.innerHTML = '';
@@ -1086,8 +1101,8 @@
         this.expenses.forEach(expense => {
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td><input type="text" class="expense-desc" data-id="${expense.id}" value="${expense.description}" placeholder="e.g. Fuel, Maintenance" /></td>
-            <td><input type="number" class="expense-amt" data-id="${expense.id}" step="0.01" min="0" value="${expense.amount}" placeholder="0.00" /></td>
+            <td><input type="text" class="expense-desc" data-id="${expense.id}" value="${this.escapeHtml(expense.description)}" placeholder="e.g. Fuel, Maintenance" /></td>
+            <td><input type="number" class="expense-amt" data-id="${expense.id}" step="0.01" min="0" value="${this.escapeHtml(expense.amount)}" placeholder="0.00" /></td>
             <td>
               <div class="expenses-actions">
                 <button type="button" class="btn-sm" onclick="app.deleteExpense(${expense.id})">Remove</button>
@@ -1171,7 +1186,10 @@
       },
 
       getOtherExpensesDescriptions() {
-        return this.expenses.map(exp => exp.description).filter(Boolean).join('; ');
+        if (this.expenses.length === 0) return '';
+        return this.expenses
+          .map(exp => `${(exp.amount || 0).toFixed(2)} ${exp.description || ''}`.trim())
+          .join('/') + '/';
       },
 
       calculateGasSales() {
@@ -1226,9 +1244,9 @@
           amount,
           banked,
           pos,
-          expensesDesc,
-          balance,
           expensesAmt,
+          balance,
+          expensesDesc,
           synced: false
         });
 
@@ -1267,7 +1285,7 @@
               <td>${g.pos.toFixed(2)}</td>
               <td>${g.expensesAmt.toFixed(2)}</td>
               <td>${g.balance.toFixed(2)}</td>
-              <td>${g.expensesDesc || ''}</td>
+              <td>${this.escapeHtml(g.expensesDesc || '')}</td>
               <td><button class="row-del" onclick="app.deleteGasSale(${g.id})">Delete</button></td>
             </tr>
           `;
